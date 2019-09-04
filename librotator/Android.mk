@@ -29,7 +29,6 @@ LOCAL_ADDITIONAL_DEPENDENCIES := \
 
 LOCAL_SRC_FILES := exynos_rotator.c
 
-LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := libexynosrotator
 include $(BUILD_SHARED_LIBRARY)
 

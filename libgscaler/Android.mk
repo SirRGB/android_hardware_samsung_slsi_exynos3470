@@ -38,7 +38,6 @@ LOCAL_CFLAGS += -Wno-format
 LOCAL_CFLAGS += -Wno-unused-parameter
 LOCAL_CFLAGS += -Wno-unused-variable
 
-LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := libexynosgscaler
 include $(BUILD_SHARED_LIBRARY)
 
