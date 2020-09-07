@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LOCAL_PATH:= $(call my-dir)
+LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
@@ -22,17 +22,19 @@ LOCAL_SRC_FILES := \
 	exynos_mc.c
 
 LOCAL_C_INCLUDES := \
-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
 	$(LOCAL_PATH)/../include \
-	$(TOP)/hardware/samsung_slsi/exynos5/libexynosutils
+	$(TOP)/hardware/samsung_slsi-cm/exynos/libexynosutils
 
-LOCAL_ADDITIONAL_DEPENDENCIES := \
-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+LOCAL_HEADER_LIBRARIES := generated_kernel_headers
 
 LOCAL_SHARED_LIBRARIES := \
 	liblog \
 	libutils \
-	libexynosutils 
+	libexynosutils
+
+LOCAL_CFLAGS += -Wno-unused-parameter
+LOCAL_CFLAGS += -Wno-unused-variable
+LOCAL_CFLAGS += -Wno-unused-function
 
 LOCAL_MODULE := libexynosv4l2
 LOCAL_MODULE_TAGS := eng

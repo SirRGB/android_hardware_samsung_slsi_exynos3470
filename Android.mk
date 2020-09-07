@@ -15,26 +15,24 @@
 # limitations under the License.
 #
 
-ifeq ($(TARGET_BOARD_PLATFORM),exynos5)
-ifeq ($(TARGET_SLSI_VARIANT),)
+ifeq ($(TARGET_BOARD_PLATFORM),exynos3)
 
-exynos5_dirs := \
-	libion_exynos \
-	libexynosutils \
-	exynos_omx \
-	libcsc \
-	libgscaler \
-	librotator \
-	libstagefrighthw \
-	libswconverter \
-	libv4l2 \
-	libhwjpeg \
-	libhwc \
-	libcamera2 \
-	mobicore \
-	libkeymaster \
-	gralloc \
-	libsecurepath
+exynos3_dirs := \
+        libion_exynos \
+        libmemtrack \
+        libsecurepath \
+        libstagefrighthw \
+        libswconverter \
+        libexynosutils \
+        libv4l2 \
+        gralloc \
+        libhwjpeg \
+        libcsc
+#        libcamera2
+##        mobicore \
+##        libgscaler \
+##        libhwc \
+##        libcsc
 
 BOARD_USE_V4L2 := true
 BOARD_USE_V4L2_ION := true
@@ -48,18 +46,10 @@ BOARD_USES_MFC_FPS := true
 BOARD_USE_S3D_SUPPORT := true
 BOARD_USE_EXYNOS_OMX := true
 
-# TVOUT
-#BOARD_USES_HDMI := true
-#BOARD_HDMI_STD := STD_1080P
-#BOARD_HDMI_DDC_CH := DDC_CH_I2C_2
-#BOARD_USES_HDMI_FIMGAPI := true
-#BOARD_USES_FIMGAPI := true
-
 # HWC
 USE_HWC_CSC_THREAD := true
 
 
-include $(call all-named-subdir-makefiles,$(exynos5_dirs))
+include $(call all-named-subdir-makefiles,$(exynos3_dirs))
 
-endif
 endif

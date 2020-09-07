@@ -16,23 +16,26 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_C_INCLUDES := \
-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
 	$(LOCAL_PATH) \
-	hardware/samsung_slsi/exynos5/include
+	hardware/samsung_slsi-cm/exynos3470/include
 
-LOCAL_ADDITIONAL_DEPENDENCIES := \
-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
-
-LOCAL_SRC_FILES:= \
+LOCAL_SRC_FILES := \
 	ExynosJpegBase.cpp \
 	ExynosJpegEncoder.cpp \
-	ExynosJpegDecoder.cpp
+	ExynosJpegDecoder.cpp \
+        ExynosJpegBase_Dependence.cpp
 
 LOCAL_SHARED_LIBRARIES :=    \
 	libcutils	\
-	libion_exynos
+	libion_exynos \
+        liblog \
+        libexynosutils
 
-LOCAL_MODULE:= libhwjpeg
+LOCAL_HEADER_LIBRARIES := generated_kernel_headers
+
+LOCAL_CFLAGS += -Wno-null-pointer-arithmetic
+
+LOCAL_MODULE := libhwjpeg
 
 LOCAL_MODULE_TAGS := optional
 

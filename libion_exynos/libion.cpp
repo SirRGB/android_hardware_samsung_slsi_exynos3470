@@ -35,6 +35,13 @@ struct ion_fd_data {
     int fd;
 };
 
+struct ion_fd_partial_data {
+    ion_handle handle;
+    int fd;
+    off_t offset;
+    size_t len;
+};
+
 struct ion_handle_data {
     ion_handle handle;
 };
@@ -52,6 +59,7 @@ struct ion_custom_data {
 #define ION_IOC_IMPORT  _IOWR(ION_IOC_MAGIC, 5, struct ion_fd_data)
 #define ION_IOC_CUSTOM  _IOWR(ION_IOC_MAGIC, 6, struct ion_custom_data)
 #define ION_IOC_SYNC	_IOWR(ION_IOC_MAGIC, 7, struct ion_fd_data)
+#define ION_IOC_SYNC_PARTIAL	_IOWR(ION_IOC_MAGIC, 9, struct ion_fd_partial_data)
 
 struct ion_msync_data {
     long flags;
@@ -94,6 +102,14 @@ ion_buffer ion_alloc(ion_client client, size_t len, size_t align,
     arg_share.handle = arg_alloc.handle;
     ret = ioctl(client, ION_IOC_SHARE, &arg_share);
 
+    if ((ret >= 0) && (!arg_share.fd)) {
+        ret = ioctl(client, ION_IOC_SHARE, &arg_share);
+        if (ret >= 0)
+            close(0);
+        else
+            ret = 0;
+    }
+
     arg_free.handle = arg_alloc.handle;
     ioctl(client, ION_IOC_FREE, &arg_free);
 
@@ -128,6 +144,17 @@ int ion_sync(ion_client client, ion_buffer buffer)
     return ioctl(client, ION_IOC_SYNC, &data);
 }
 
+int ion_sync_fd_partial(ion_client client, ion_buffer buffer, off_t offset, size_t len)
+{
+    struct ion_fd_partial_data data;
+
+    data.fd = buffer;
+    data.offset = offset;
+    data.len = len;
+
+    return ioctl(client, ION_IOC_SYNC_PARTIAL, &data);
+}
+
 int ion_incRef(int fd, int share_fd, unsigned long **handle)
 {
     struct ion_fd_data data;
@@ -136,8 +163,9 @@ int ion_incRef(int fd, int share_fd, unsigned long **handle)
 
     int ret = ioctl(fd, ION_IOC_IMPORT, &data);
     if (ret < 0)
-            return ret;
-    *handle = (unsigned long*)(data.handle);
+        return ret;
+
+    *handle = (unsigned long *)(data.handle);
     return ret;
 }
 

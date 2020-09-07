@@ -19,14 +19,10 @@ LOCAL_SHARED_LIBRARIES := liblog libutils libcutils
 
 LOCAL_CFLAGS += -DEXYNOS_PLATFORM_ON_ANDROID
 
-LOCAL_C_INCLUDES := \
-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
-	$(LOCAL_PATH) \
-	$(LOCAL_PATH)/../include \
-	framework/base/include
-
-LOCAL_ADDITIONAL_DEPENDENCIES := \
-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+LOCAL_C_INCLUDES :=  \
+        $(LOCAL_PATH)
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
+LOCAL_C_INCLUDES += framework/base/include
 
 LOCAL_SRC_FILES := ExynosMutex.cpp \
 		   Exynos_log.c
@@ -34,10 +30,14 @@ LOCAL_SRC_FILES := ExynosMutex.cpp \
 LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := libexynosutils
 
-ifeq ($(TARGET_BOARD_PLATFORM), exynos3)
-LOCAL_SRC_FILES += exynos5_format_v4l2.c
+LOCAL_SRC_FILES += exynos_format_v4l2.c
 LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../include
+
+LOCAL_HEADER_LIBRARIES := generated_kernel_headers
+
+ifeq ($(BOARD_USES_FIMC),true)
+LOCAL_CFLAGS += -DENABLE_FIMC
 endif
 
 include $(BUILD_SHARED_LIBRARY)

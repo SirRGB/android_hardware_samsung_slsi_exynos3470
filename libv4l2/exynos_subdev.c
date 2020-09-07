@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -40,7 +41,7 @@
 #define LOG_TAG "libexynosv4l2-subdev"
 #include <utils/Log.h>
 
-#define SUBDEV_MINOR_MAX 191
+#define SUBDEV_MAX 191
 
 static int __subdev_open(const char *filename, int oflag, va_list ap)
 {
@@ -67,6 +68,67 @@ int exynos_subdev_open(const char *filename, int oflag, ...)
     return fd;
 }
 
+int exynos_subdev_get_node_num(const char *devname, int oflag, ...)
+{
+    bool found = false;
+    int ret = -1;
+    struct stat s;
+    va_list ap;
+    FILE *stream_fd;
+    char filename[64], name[64];
+    int i = 0;
+    char *rc = NULL;
+
+    do {
+        if (i > (SUBDEV_MAX - 128))
+            break;
+
+        /* video device node */
+        snprintf(filename, sizeof(filename), "/dev/v4l-subdev%d", i);
+
+        /* if the node is video device */
+        if ((lstat(filename, &s) == 0) && S_ISCHR(s.st_mode) &&
+                ((int)((unsigned short)(s.st_rdev) >> 8) == 81)) {
+            ALOGD("try node: %s", filename);
+            /* open sysfs entry */
+            snprintf(filename, sizeof(filename), "/sys/class/video4linux/v4l-subdev%d/name", i);
+            if (S_ISLNK(s.st_mode)) {
+                ALOGE("symbolic link detected");
+                return -1;
+            }
+            stream_fd = fopen(filename, "r");
+            if (stream_fd == NULL) {
+                ALOGE("failed to open sysfs entry for subdev");
+                continue;   /* try next */
+            }
+
+            /* read sysfs entry for device name */
+            rc = fgets(name, sizeof(name), stream_fd);
+            fclose(stream_fd);
+
+            /* check read size */
+            if (rc == NULL) {
+                ALOGE("failed to read sysfs entry for subdev");
+            } else {
+                /* matched */
+                if (strncmp(name, devname, strlen(devname)) == 0) {
+                    ALOGI("node found for device %s: /dev/v4l-subdev%d", devname, i);
+                    found = true;
+                    break;
+                }
+            }
+        }
+        i++;
+    } while (found == false);
+
+    if (found)
+        ret = i;
+    else
+        ALOGE("no subdev device found");
+
+    return ret;
+}
+
 int exynos_subdev_open_devname(const char *devname, int oflag, ...)
 {
     bool found = false;
@@ -75,22 +137,26 @@ int exynos_subdev_open_devname(const char *devname, int oflag, ...)
     va_list ap;
     FILE *stream_fd;
     char filename[64], name[64];
-    int minor, size, i = 0;
+    int i = 0;
+    char *rc = NULL;
 
     do {
-        if (i > (SUBDEV_MINOR_MAX - 128))
+        if (i > (SUBDEV_MAX - 128))
             break;
 
         /* video device node */
-        sprintf(filename, "/dev/v4l-subdev%d", i++);
+        snprintf(filename, sizeof(filename), "/dev/v4l-subdev%d", i);
 
         /* if the node is video device */
         if ((lstat(filename, &s) == 0) && S_ISCHR(s.st_mode) &&
                 ((int)((unsigned short)(s.st_rdev) >> 8) == 81)) {
-            minor = (int)((unsigned short)(s.st_rdev & 0x3f));
-            ALOGD("try node: %s, minor: %d", filename, minor);
+            ALOGD("try node: %s", filename);
             /* open sysfs entry */
-            sprintf(filename, "/sys/class/video4linux/v4l-subdev%d/name", minor);
+            snprintf(filename, sizeof(filename), "/sys/class/video4linux/v4l-subdev%d/name", i);
+            if (S_ISLNK(s.st_mode)) {
+                ALOGE("symbolic link detected");
+                return -1;
+            }
             stream_fd = fopen(filename, "r");
             if (stream_fd == NULL) {
                 ALOGE("failed to open sysfs entry for subdev");
@@ -98,24 +164,26 @@ int exynos_subdev_open_devname(const char *devname, int oflag, ...)
             }
 
             /* read sysfs entry for device name */
-            size = (int)fgets(name, sizeof(name), stream_fd);
+            rc = fgets(name, sizeof(name), stream_fd);
             fclose(stream_fd);
 
             /* check read size */
-            if (size == 0) {
+            if (rc == NULL) {
                 ALOGE("failed to read sysfs entry for subdev");
             } else {
                 /* matched */
                 if (strncmp(name, devname, strlen(devname)) == 0) {
-                    ALOGI("node found for device %s: /dev/v4l-subdev%d", devname, minor);
+                    ALOGI("node found for device %s: /dev/v4l-subdev%d", devname, i);
                     found = true;
+                    break;
                 }
             }
         }
+	i++;
     } while (found == false);
 
     if (found) {
-        sprintf(filename, "/dev/v4l-subdev%d", minor);
+        snprintf(filename, sizeof(filename), "/dev/v4l-subdev%d", i);
         va_start(ap, oflag);
         fd = __subdev_open(filename, oflag, ap);
         va_end(ap);
@@ -129,6 +197,18 @@ int exynos_subdev_open_devname(const char *devname, int oflag, ...)
     }
 
     return fd;
+}
+
+int exynos_subdev_close(int fd)
+{
+    int ret = -1;
+
+    if (fd < 0)
+        ALOGE("%s: invalid fd: %d", __func__, fd);
+    else
+        ret = close(fd);
+
+    return ret;
 }
 
 /**

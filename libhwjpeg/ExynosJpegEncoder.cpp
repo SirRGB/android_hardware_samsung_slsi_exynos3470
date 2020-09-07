@@ -1,6 +1,6 @@
 /*
  * Copyright Samsung Electronics Co.,LTD.
- * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (C) 2013 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,7 @@
 #include <signal.h>
 #include <math.h>
 #include <sys/poll.h>
-
 #include <cutils/log.h>
-
 #include <utils/Log.h>
 
 #include "ExynosJpegApi.h"
@@ -40,7 +38,6 @@
 
 #define NUM_JPEG_ENC_IN_PLANES (1)
 #define NUM_JPEG_ENC_OUT_PLANES (1)
-
 #define NUM_JPEG_ENC_IN_BUFS (1)
 #define NUM_JPEG_ENC_OUT_BUFS (1)
 
@@ -52,9 +49,8 @@ ExynosJpegEncoder::ExynosJpegEncoder()
 
 ExynosJpegEncoder::~ExynosJpegEncoder()
 {
-    if (t_bFlagCreate == true) {
+    if (t_bFlagCreate == true)
         this->destroy();
-    }
 }
 
 int ExynosJpegEncoder::create(void)
@@ -72,15 +68,58 @@ int ExynosJpegEncoder::setJpegConfig(void *pConfig)
     return ExynosJpegBase::setJpegConfig(MODE_ENCODE, pConfig);
 }
 
- int ExynosJpegEncoder::getInBuf(int *piBuf, int *piInputSize, int iSize)
+int ExynosJpegEncoder::checkInBufType(void)
+{
+    return checkBufType(&t_stJpegInbuf);
+}
+
+int ExynosJpegEncoder::checkOutBufType(void)
+{
+    return checkBufType(&t_stJpegOutbuf);
+}
+
+int ExynosJpegEncoder::getInBuf(char **pcBuf, int *piInputSize, int iSize)
+{
+    return getBuf(t_bFlagCreateInBuf, &t_stJpegInbuf, pcBuf, piInputSize, iSize, t_iPlaneNum);
+}
+
+int ExynosJpegEncoder::getOutBuf(char **pcBuf, int *piOutputSize)
+{
+    return getBuf(t_bFlagCreateOutBuf, &t_stJpegOutbuf, pcBuf, piOutputSize,
+                    NUM_JPEG_ENC_OUT_PLANES, NUM_JPEG_ENC_OUT_PLANES);
+}
+
+int ExynosJpegEncoder::setInBuf(char **pcBuf, int *iSize)
+{
+    int iRet = ERROR_NONE;
+    iRet = setBuf(&t_stJpegInbuf, pcBuf, iSize, t_iPlaneNum);
+
+    if (iRet == ERROR_NONE)
+        t_bFlagCreateInBuf = true;
+
+    return iRet;
+}
+
+int  ExynosJpegEncoder::setOutBuf(char *pcBuf, int iSize)
+{
+    int iRet = ERROR_NONE;
+    iRet = setBuf(&t_stJpegOutbuf, &pcBuf, &iSize, NUM_JPEG_ENC_OUT_PLANES);
+
+    if (iRet == ERROR_NONE)
+        t_bFlagCreateOutBuf = true;
+
+    return iRet;
+}
+
+int ExynosJpegEncoder::getInBuf(int *piBuf, int *piInputSize, int iSize)
 {
     return getBuf(t_bFlagCreateInBuf, &t_stJpegInbuf, piBuf, piInputSize, iSize, t_iPlaneNum);
 }
 
 int ExynosJpegEncoder::getOutBuf(int *piBuf, int *piOutputSize)
 {
-    return getBuf(t_bFlagCreateOutBuf, &t_stJpegOutbuf, piBuf, piOutputSize, \
-        NUM_JPEG_ENC_OUT_PLANES, NUM_JPEG_ENC_OUT_PLANES);
+    return getBuf(t_bFlagCreateOutBuf, &t_stJpegOutbuf, piBuf, piOutputSize,
+                    NUM_JPEG_ENC_OUT_PLANES, NUM_JPEG_ENC_OUT_PLANES);
 }
 
 int ExynosJpegEncoder::setInBuf(int *piBuf, int *iSize)
@@ -88,34 +127,30 @@ int ExynosJpegEncoder::setInBuf(int *piBuf, int *iSize)
     int iRet = ERROR_NONE;
     iRet = setBuf(&t_stJpegInbuf, piBuf, iSize, t_iPlaneNum);
 
-    if (iRet == ERROR_NONE) {
+    if (iRet == ERROR_NONE)
         t_bFlagCreateInBuf = true;
-    }
 
     return iRet;
 }
 
-int  ExynosJpegEncoder::setOutBuf(int iBuf, int iSize)
+int ExynosJpegEncoder::setOutBuf(int piBuf, int iSize)
 {
     int iRet = ERROR_NONE;
-    iRet = setBuf(&t_stJpegOutbuf, &iBuf, &iSize, NUM_JPEG_ENC_OUT_PLANES);
+    iRet = setBuf(&t_stJpegOutbuf, &piBuf, &iSize, NUM_JPEG_ENC_OUT_PLANES);
 
-    if (iRet == ERROR_NONE) {
+    if (iRet == ERROR_NONE)
         t_bFlagCreateOutBuf = true;
-    }
 
     return iRet;
 }
 
 int ExynosJpegEncoder::getSize(int *piW, int *piH)
 {
-    if (t_bFlagCreate == false) {
+    if (t_bFlagCreate == false)
         return ERROR_JPEG_DEVICE_NOT_CREATE_YET;
-    }
 
-    if (t_stJpegConfig.width == 0 && t_stJpegConfig.height == 0) {
+    if (t_stJpegConfig.width == 0 && t_stJpegConfig.height == 0)
         return ERROR_SIZE_NOT_SET_YET;
-    }
 
     *piW = t_stJpegConfig.width;
     *piH = t_stJpegConfig.height;
@@ -145,41 +180,37 @@ int ExynosJpegEncoder::setColorBufSize(int *piBufSize, int iSize)
 
 int ExynosJpegEncoder::updateConfig(void)
 {
-    return ExynosJpegBase::updateConfig(MODE_ENCODE, \
-        NUM_JPEG_ENC_IN_BUFS, NUM_JPEG_ENC_OUT_BUFS, \
-        NUM_JPEG_ENC_IN_PLANES, NUM_JPEG_ENC_OUT_PLANES);
+    return ExynosJpegBase::updateConfig(MODE_ENCODE,
+                    NUM_JPEG_ENC_IN_BUFS, NUM_JPEG_ENC_OUT_BUFS,
+                    NUM_JPEG_ENC_IN_PLANES, NUM_JPEG_ENC_OUT_PLANES);
 }
 
 int ExynosJpegEncoder::setQuality(int iV4l2Quality)
 {
-    if (t_bFlagCreate == false) {
+    if (t_bFlagCreate == false)
         return ERROR_JPEG_DEVICE_NOT_CREATE_YET;
-    }
 
-    if (iV4l2Quality >= 90)
+    if (iV4l2Quality >= 96)
         t_stJpegConfig.enc_qual = QUALITY_LEVEL_1;
-    else if (iV4l2Quality >= 80)
+    else if (iV4l2Quality >= 92)
         t_stJpegConfig.enc_qual = QUALITY_LEVEL_2;
-    else if (iV4l2Quality >= 70)
-        t_stJpegConfig.enc_qual = QUALITY_LEVEL_3;
-    else
+    else if (iV4l2Quality >= 38)
         t_stJpegConfig.enc_qual = QUALITY_LEVEL_4;
+    else if (iV4l2Quality >= 30)
+        t_stJpegConfig.enc_qual = QUALITY_LEVEL_5;
+    else
+        t_stJpegConfig.enc_qual = QUALITY_LEVEL_6;
 
     return ERROR_NONE;
 }
 
 int ExynosJpegEncoder::getJpegSize(void)
 {
-    if (t_bFlagCreate == false) {
+    if (t_bFlagCreate == false)
         return 0;
-    }
 
     int iSize = -1;
-#ifdef KERNEL_33_JPEG_API
     iSize = t_stJpegConfig.sizeJpeg;
-#else
-    iSize = t_v4l2GetCtrl(t_iJpegFd, V4L2_CID_CAM_JPEG_ENCODEDSIZE);
-#endif
 
     if (iSize < 0) {
         JPEG_ERROR_LOG("%s::Fail to JPEG output buffer!!\n", __func__);
@@ -193,4 +224,3 @@ int ExynosJpegEncoder::encode(void)
 {
     return ExynosJpegBase::execute(t_iPlaneNum, NUM_JPEG_ENC_OUT_PLANES);
 }
-

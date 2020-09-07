@@ -17,6 +17,7 @@
 #include "Exynos_OMX_Plugin.h"
 
 #include <dlfcn.h>
+#include <android/log.h>
 
 #include <media/hardware/HardwareAPI.h>
 #include <media/stagefright/foundation/ADebug.h>

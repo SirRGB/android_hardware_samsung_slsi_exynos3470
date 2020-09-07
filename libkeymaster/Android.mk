@@ -20,7 +20,7 @@ include $(CLEAR_VARS)
 MOBICORE_PATH := hardware/samsung_slsi/exynos5/mobicore
 
 LOCAL_MODULE := keystore.exynos5
-LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_SHARED_LIBRARIES)/hw
+LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_SRC_FILES := keymaster_mobicore.cpp tlcTeeKeymaster_if.c
 LOCAL_C_INCLUDES := \
 	$(MOBICORE_PATH)/daemon/ClientLib/public \
@@ -29,5 +29,6 @@ LOCAL_C_FLAGS = -fvisibility=hidden -Wall -Werror
 LOCAL_SHARED_LIBRARIES := libcrypto liblog libMcClient
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)

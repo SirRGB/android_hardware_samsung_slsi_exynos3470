@@ -28,6 +28,7 @@
  *   2012.02.01 : Create
  */
 
+#include <string.h>
 #include "stdio.h"
 #include "stdlib.h"
 #include "swconverter.h"
@@ -36,7 +37,7 @@
  * Return the linear address from tiled position (x, y) */
 unsigned int Tile2D_To_Linear(
     unsigned int width,
-    unsigned int height,
+    unsigned int height __unused,
     unsigned int xpos,
     unsigned int ypos,
     int crFlag)
@@ -405,10 +406,10 @@ void csc_tiled_to_linear_uv_deinterleave(
  *
  */
 void csc_linear_to_tiled_y(
-    unsigned char *y_dst,
-    unsigned char *y_src,
-    unsigned int width,
-    unsigned int height)
+    unsigned char *y_dst __unused,
+    unsigned char *y_src __unused,
+    unsigned int width __unused,
+    unsigned int height __unused)
 {
 
 }
@@ -435,11 +436,11 @@ void csc_linear_to_tiled_y(
  *
  */
 void csc_linear_to_tiled_uv(
-    unsigned char *uv_dst,
-    unsigned char *u_src,
-    unsigned char *v_src,
-    unsigned int width,
-    unsigned int height)
+    unsigned char *uv_dst __unused,
+    unsigned char *u_src __unused,
+    unsigned char *v_src __unused,
+    unsigned int width __unused,
+    unsigned int height __unused)
 {
 
 }
@@ -447,8 +448,8 @@ void csc_linear_to_tiled_uv(
 void Tile2D_To_YUV420(unsigned char *Y_plane, unsigned char *Cb_plane, unsigned char *Cr_plane,
                         unsigned int y_addr, unsigned int c_addr, unsigned int width, unsigned int height)
 {
-    int x, y, j, k, l;
-    int out_of_width, actual_width;
+    unsigned int x, y, j, k, l;
+    unsigned int out_of_width, actual_width;
     unsigned int base_addr, data;
 
     // y: 0, 16, 32, ...
@@ -461,7 +462,7 @@ void Tile2D_To_YUV420(unsigned char *Y_plane, unsigned char *Cb_plane, unsigned 
             for (k = 0; (k < 16) && ((y + k) < height); k++) {
                 actual_width = out_of_width ? ((width%4)?((width%16) / 4 + 1) : ((width%16) / 4)) : 4;
                 for (l = 0; l < actual_width; l++) {
-                    data = *((unsigned int*)(base_addr + 16*k + l*4));
+                    data = *((unsigned int*)(uintptr_t)(base_addr + 16*k + l*4));
                     for (j = 0; (j < 4) && (x + l*4 + j) < width; j++) {
                         Y_plane[(y+k)*width + x + l*4 +j] = (data>>(8*j))&0xff;
                     }
@@ -477,7 +478,7 @@ void Tile2D_To_YUV420(unsigned char *Y_plane, unsigned char *Cb_plane, unsigned 
             for (k = 0; (k < 8) && ((y+k) < height/2); k++) {
                 actual_width = out_of_width ? ((width%4) ? ((width%16) / 4 + 1) : ((width%16) / 4)) : 4;
                 for (l = 0; l < actual_width; l++) {
-                    data = *((unsigned int*)(base_addr + 16*k + l*4));
+                    data = *((unsigned int*)(uintptr_t)(base_addr + 16*k + l*4));
                     for (j = 0; (j < 2) && (x/2 + l*2 +j) < width/2; j++) {
                         Cb_plane[(y+k)*width/2 + x/2 + l*2 +j] = (data>> (8*2*j))&0xff;
                         Cr_plane[(y+k)*width/2 + x/2 + l*2 +j] = (data>>(8*2*j+8))&0xff;
@@ -517,7 +518,7 @@ void csc_RGB565_to_YUV420P(
     int width,
     int height)
 {
-    unsigned int i, j;
+    int i, j;
     unsigned int tmp;
 
     unsigned int R, G, B;
@@ -591,7 +592,7 @@ void csc_RGB565_to_YUV420SP(
     int width,
     int height)
 {
-    unsigned int i, j;
+    int i, j;
     unsigned int tmp;
 
     unsigned int R, G, B;

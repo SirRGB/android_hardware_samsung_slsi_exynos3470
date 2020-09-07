@@ -18,9 +18,20 @@ LOCAL_PATH := $(call my-dir)
 # hw/<POWERS_HARDWARE_MODULE_ID>.<ro.hardware>.so
 include $(CLEAR_VARS)
 
-LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
+LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_C_INCLUDES += hardware/libhardware/include
 LOCAL_SHARED_LIBRARIES := liblog
-LOCAL_SRC_FILES := memtrack_exynos5.c mali.c
-LOCAL_MODULE := memtrack.exynos5
+LOCAL_SRC_FILES := memtrack_exynos5.c ion.c
+LOCAL_MODULE := memtrack.exynos3
+LOCAL_PROPRIETARY_MODULE := true
+
+ifneq ($(TARGET_SOC),exynos3470)
+LOCAL_CFLAGS += -DTRACK_MALI_MEMORY
+LOCAL_SRC_FILES += mali.c
+endif
+
+LOCAL_CFLAGS += -Wno-gnu-designator
+LOCAL_CFLAGS += -Wno-unused-parameter
+LOCAL_CFLAGS += -Wno-unused-variable
+
 include $(BUILD_SHARED_LIBRARY)

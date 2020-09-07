@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2013 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,12 +47,15 @@ struct private_module_t {
     buffer_handle_t currentBuffer;
     int ionfd;
 
+    struct fb_var_screeninfo info;
+    struct fb_fix_screeninfo finfo;
     int xres;
     int yres;
     int line_length;
     float xdpi;
     float ydpi;
     float fps;
+    int swapInterval;
     void *queue;
     pthread_mutex_t queue_lock;
 
@@ -66,9 +69,6 @@ struct private_handle_t : public native_handle {
 struct private_handle_t {
     struct native_handle nativeHandle;
 #endif
-
-// set if using video encoding colorspace
-#define GRALLOC_USAGE_PRIVATE_CHROMA (GRALLOC_USAGE_PRIVATE_0)
 
     enum {
         PRIV_FLAGS_FRAMEBUFFER = 0x00000001,
@@ -91,8 +91,6 @@ struct private_handle_t {
     int     height;
     int     stride;
     int     vstride;
-    int     gamut;
-    int     chroma;
 
     // FIXME: the attributes below should be out-of-line
     void    *base;
@@ -104,15 +102,25 @@ struct private_handle_t {
 
 #ifdef __cplusplus
     static const int sNumFds = 3;
-    static const int sNumInts = 17;
+    static const int sNumInts = 34;
     static const int sMagic = 0x3141592;
 
+    private_handle_t(int fd, int size, int flags) :
+        fd(fd), fd1(-1), fd2(-1), magic(sMagic), flags(flags), size(size),
+        offset(0), format(0), width(0), height(0), stride(0),
+        vstride(0), base(0), base1(0), base2(0), handle(0), handle1(0),
+        handle2(0)
+    {
+        version = sizeof(native_handle);
+        numInts = sNumInts + 2;
+        numFds = sNumFds - 2;
+    }
 
     private_handle_t(int fd, int size, int flags, int w,
 		     int h, int format, int stride, int vstride) :
         fd(fd), fd1(-1), fd2(-1), magic(sMagic), flags(flags), size(size),
         offset(0), format(format), width(w), height(h), stride(stride),
-        vstride(vstride), gamut(0), chroma(0), base(0), handle(0), handle1(0),
+        vstride(vstride), base(0), base1(0), base2(0), handle(0), handle1(0),
         handle2(0)
     {
         version = sizeof(native_handle);
@@ -124,8 +132,8 @@ struct private_handle_t {
 		     int h, int format, int stride, int vstride) :
         fd(fd), fd1(fd1), fd2(-1), magic(sMagic), flags(flags), size(size),
         offset(0), format(format), width(w), height(h), stride(stride),
-        vstride(vstride), gamut(0), chroma(0), base(0), base1(0), base2(0),
-        handle(0), handle1(0), handle2(0)
+        vstride(vstride), base(0), base1(0), base2(0), handle(0), handle1(0),
+        handle2(0)
     {
         version = sizeof(native_handle);
         numInts = sNumInts + 1;
@@ -136,8 +144,8 @@ struct private_handle_t {
 		     int h, int format, int stride, int vstride) :
         fd(fd), fd1(fd1), fd2(fd2), magic(sMagic), flags(flags), size(size),
         offset(0), format(format), width(w), height(h), stride(stride),
-        vstride(vstride), gamut(0), chroma(0), base(0), base1(0), base2(0),
-        handle(0), handle1(0), handle2(0)
+        vstride(vstride), base(0), base1(0), base2(0), handle(0), handle1(0),
+        handle2(0)
     {
         version = sizeof(native_handle);
         numInts = sNumInts;
@@ -150,8 +158,8 @@ struct private_handle_t {
     static int validate(const native_handle* h) {
         const private_handle_t* hnd = (const private_handle_t*)h;
         if (!h || h->version != sizeof(native_handle) ||
-            hnd->numInts + hnd->numFds != sNumInts + sNumFds || 
-            hnd->magic != sMagic) 
+            hnd->numInts + hnd->numFds != sNumInts + sNumFds ||
+            hnd->magic != sMagic)
         {
             void *handle = reinterpret_cast<void *>(const_cast<native_handle *>(h));
             if(handle != 0)

@@ -43,7 +43,7 @@
 #include <utils/Log.h>
 #include "Exynos_log.h"
 
-#define VIDEODEV_MINOR_MAX 63
+#define VIDEODEV_MAX 255
 
 //#define EXYNOS_V4L2_TRACE 0
 #ifdef EXYNOS_V4L2_TRACE
@@ -112,24 +112,28 @@ int exynos_v4l2_open_devname(const char *devname, int oflag, ...)
     va_list ap;
     FILE *stream_fd;
     char filename[64], name[64];
-    int minor, size, i = 0;
+    int i = 0;
+    char *rc = NULL;
 
     Exynos_v4l2_In();
 
     do {
-        if (i > VIDEODEV_MINOR_MAX)
+        if (i > VIDEODEV_MAX)
             break;
 
         /* video device node */
-        sprintf(filename, "/dev/video%d", i++);
+        snprintf(filename, sizeof(filename), "/dev/video%d", i);
 
         /* if the node is video device */
         if ((lstat(filename, &s) == 0) && S_ISCHR(s.st_mode) &&
                 ((int)((unsigned short)(s.st_rdev) >> 8) == 81)) {
-            minor = (int)((unsigned short)(s.st_rdev & 0x3f));
-            ALOGD("try node: %s, minor: %d", filename, minor);
+            ALOGD("try node: %s", filename);
             /* open sysfs entry */
-            sprintf(filename, "/sys/class/video4linux/video%d/name", minor);
+            snprintf(filename, sizeof(filename), "/sys/class/video4linux/video%d/name", i);
+            if (S_ISLNK(s.st_mode)) {
+                ALOGE("symbolic link detected");
+                return -1;
+            }
             stream_fd = fopen(filename, "r");
             if (stream_fd == NULL) {
                 ALOGE("failed to open sysfs entry for videodev");
@@ -137,24 +141,26 @@ int exynos_v4l2_open_devname(const char *devname, int oflag, ...)
             }
 
             /* read sysfs entry for device name */
-            size = (int)fgets(name, sizeof(name), stream_fd);
+            rc = fgets(name, sizeof(name), stream_fd);
             fclose(stream_fd);
 
             /* check read size */
-            if (size == 0) {
+            if (rc == NULL) {
                 ALOGE("failed to read sysfs entry for videodev");
             } else {
                 /* matched */
                 if (strncmp(name, devname, strlen(devname)) == 0) {
-                    ALOGI("node found for device %s: /dev/video%d", devname, minor);
+                    ALOGI("node found for device %s: /dev/video%d", devname, i);
                     found = true;
+                    break;
                 }
             }
         }
+        i++;
     } while (found == false);
 
     if (found) {
-        sprintf(filename, "/dev/video%d", minor);
+        snprintf(filename, sizeof(filename), "/dev/video%d", i);
         va_start(ap, oflag);
         fd = __v4l2_open(filename, oflag, ap);
         va_end(ap);
@@ -162,7 +168,7 @@ int exynos_v4l2_open_devname(const char *devname, int oflag, ...)
         if (fd > 0)
             ALOGI("open video device %s", filename);
         else
-            ALOGE("failed to open video device %s", filename);
+            ALOGE("failed to open video device %s (%s)", filename, strerror(errno));
     } else {
         ALOGE("no video device found");
     }
@@ -191,7 +197,9 @@ int exynos_v4l2_close(int fd)
 bool exynos_v4l2_enuminput(int fd, int index, char *input_name_buf)
 {
     int ret = -1;
-    struct v4l2_input input;
+    struct v4l2_input input = {
+        .index = index,
+    };
 
     Exynos_v4l2_In();
 
@@ -200,8 +208,7 @@ bool exynos_v4l2_enuminput(int fd, int index, char *input_name_buf)
         return NULL;
     }
 
-    input.index = index;
-    ret = ioctl(fd, VIDIOC_ENUMINPUT, &input);
+    ret = ioctl(fd, VIDIOC_ENUMINPUT, &input, 32);
     if (ret) {
         ALOGE("%s: no matching index founds", __func__);
         return false;
@@ -209,7 +216,7 @@ bool exynos_v4l2_enuminput(int fd, int index, char *input_name_buf)
 
     ALOGI("Name of input channel[%d] is %s", input.index, input.name);
 
-    strcpy(input_name_buf, (const char *)input.name);
+    strncpy(input_name_buf, (const char *)input.name, 32);
 
     Exynos_v4l2_Out();
 
@@ -219,7 +226,9 @@ bool exynos_v4l2_enuminput(int fd, int index, char *input_name_buf)
 int exynos_v4l2_s_input(int fd, int index)
 {
     int ret = -1;
-    struct v4l2_input input;
+    struct v4l2_input input = {
+        .index = index,
+    };
 
     Exynos_v4l2_In();
 
@@ -227,8 +236,6 @@ int exynos_v4l2_s_input(int fd, int index)
         ALOGE("%s: invalid fd: %d", __func__, fd);
         return ret;
     }
-
-    input.index = index;
 
     ret = ioctl(fd, VIDIOC_S_INPUT, &input);
     if (ret){
@@ -282,13 +289,13 @@ bool exynos_v4l2_querycap(int fd, unsigned int need_caps)
 
 bool exynos_v4l2_enum_fmt(int fd, enum v4l2_buf_type type, unsigned int fmt)
 {
-    struct v4l2_fmtdesc fmtdesc;
+    struct v4l2_fmtdesc fmtdesc = {
+        .index = 0,
+        .type = type,
+    };
     int found = 0;
 
     Exynos_v4l2_In();
-
-    fmtdesc.type = type;
-    fmtdesc.index = 0;
 
     while (ioctl(fd, VIDIOC_ENUM_FMT, &fmtdesc) == 0) {
         if (fmtdesc.pixelformat == fmt) {
@@ -541,7 +548,10 @@ int exynos_v4l2_dqbuf(int fd, struct v4l2_buffer *buf)
 
     ret = ioctl(fd, VIDIOC_DQBUF, buf);
     if (ret) {
-        ALOGE("failed to ioctl: VIDIOC_DQBUF (%d - %s)", errno, strerror(errno));
+        if (errno == EAGAIN)
+            return -errno;
+
+        ALOGW("failed to ioctl: VIDIOC_DQBUF (%d - %s)", errno, strerror(errno));
         return ret;
     }
 
@@ -730,12 +740,12 @@ int exynos_v4l2_g_ctrl(int fd, unsigned int id, int *value)
 int exynos_v4l2_s_ctrl(int fd, unsigned int id, int value)
 {
     int ret = -1;
-    struct v4l2_control ctrl;
+    struct v4l2_control ctrl = {
+        .id = id,
+        .value = value,
+    };
 
     Exynos_v4l2_In();
-
-    ctrl.id = id;
-    ctrl.value = value;
 
     if (fd < 0) {
         ALOGE("%s: invalid fd: %d", __func__, fd);
@@ -851,6 +861,31 @@ int exynos_v4l2_s_ext_ctrl(int fd, struct v4l2_ext_controls *ctrl)
     ret = ioctl(fd, VIDIOC_S_EXT_CTRLS, ctrl);
     if (ret)
         ALOGE("failed to ioctl: VIDIOC_S_EXT_CTRLS (%d - %s)", errno, strerror(errno));
+
+    Exynos_v4l2_Out();
+
+    return ret;
+}
+
+int exynos_v4l2_prepare(int fd, struct v4l2_buffer *buf)
+{
+    int ret = -1;
+
+    Exynos_v4l2_In();
+
+    if (fd < 0) {
+        ALOGE("%s: invalid fd: %d", __func__, fd);
+        return ret;
+    }
+
+    if (!buf) {
+        ALOGE("%s: buf is NULL", __func__);
+        return ret;
+    }
+
+    ret = ioctl(fd, VIDIOC_PREPARE_BUF, buf);
+    if (ret)
+        ALOGE("failed to ioctl: VIDIOC_PREPARE_BUF (%d - %s)", errno, strerror(errno));
 
     Exynos_v4l2_Out();
 

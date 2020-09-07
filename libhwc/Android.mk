@@ -17,21 +17,24 @@ LOCAL_PATH:= $(call my-dir)
 # hw/<COPYPIX_HARDWARE_MODULE_ID>.<ro.product.board>.so
 
 include $(CLEAR_VARS)
-LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_SHARED_LIBRARIES)/hw
+LOCAL_MODULE_RELATIVE_PATH := hw
+
 LOCAL_SHARED_LIBRARIES := liblog libcutils libEGL libGLESv1_CM libhardware \
-    libhardware_legacy libion_exynos libutils libsync libexynosgscaler libexynosv4l2 libMcClient
+    libhardware_legacy libion_exynos libutils libsync libexynosscaler libexynosv4l2 libMcClient
+
 LOCAL_CFLAGS += -DLOG_TAG=\"hwcomposer\"
+LOCAL_CFLAGS += -DHDMI_INCAPABLE
 
 LOCAL_C_INCLUDES := \
-    $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
     $(LOCAL_PATH)/../include \
     $(LOCAL_PATH)/../libexynosutils
 
-LOCAL_ADDITIONAL_DEPENDENCIES := \
-    $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+LOCAL_HEADER_LIBRARIES := generated_kernel_headers
 
 LOCAL_SRC_FILES := hwc.cpp
 
 LOCAL_MODULE := hwcomposer.exynos3
 LOCAL_MODULE_TAGS := optional
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_SHARED_LIBRARY)

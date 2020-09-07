@@ -20,7 +20,7 @@ LOCAL_SRC_FILES := \
 
 LOCAL_CFLAGS += $(PV_CFLAGS_MINUS_VISIBILITY)
 
-LOCAL_C_INCLUDES:= \
+LOCAL_C_INCLUDES := \
       frameworks/native/include/media/hardware \
       frameworks/native/include/media/openmax \
       frameworks/native/include
@@ -36,5 +36,8 @@ LOCAL_SHARED_LIBRARIES :=    \
 
 LOCAL_MODULE := libstagefrighthw
 
-LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE_RELATIVE_PATH := hw
+LOCAL_MODULE_TAGS      := optional
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_SHARED_LIBRARY)

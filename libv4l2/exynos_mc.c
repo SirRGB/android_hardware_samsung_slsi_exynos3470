@@ -171,11 +171,11 @@ static int __media_get_devname_sysfs(struct media_entity *entity)
     char *p;
     int ret;
 
-    sprintf(sysname, "/sys/dev/char/%u:%u", entity->info.v4l.major,
+    snprintf(sysname, sizeof(sysname), "/sys/dev/char/%u:%u", entity->info.v4l.major,
         entity->info.v4l.minor);
 
     ret = readlink(sysname, target, sizeof(target));
-    if (ret < 0)
+    if (ret < 0 || ret >= (int)sizeof(target))
         return -errno;
 
     target[ret] = '\0';
@@ -183,10 +183,10 @@ static int __media_get_devname_sysfs(struct media_entity *entity)
     if (p == NULL)
         return -EINVAL;
 
-    sprintf(devname, "/tmp/%s", p + 1);
+    snprintf(devname, sizeof(devname), "/tmp/%s", p + 1);
 
     ret = mknod(devname, 0666 | S_IFCHR, MKDEV(81, entity->info.v4l.minor));
-    strcpy(entity->devname, devname);
+    strncpy(entity->devname, devname, sizeof(devname) - 1);
 
     return 0;
 }
@@ -196,7 +196,6 @@ static int __media_get_media_fd(const char *filename, struct media_device *media
     ssize_t num;
     int media_node;
     char *ptr;
-    char media_buf[6];
 
     ALOGD("%s: %s", __func__, filename);
 

@@ -30,10 +30,13 @@ LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/../include \
 	$(LOCAL_PATH)/../libexynosutils
 
-LOCAL_ADDITIONAL_DEPENDENCIES := \
-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+LOCAL_HEADER_LIBRARIES := generated_kernel_headers
 
 LOCAL_SRC_FILES := exynos_gscaler.c
+
+LOCAL_CFLAGS += -Wno-format
+LOCAL_CFLAGS += -Wno-unused-parameter
+LOCAL_CFLAGS += -Wno-unused-variable
 
 LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := libexynosgscaler

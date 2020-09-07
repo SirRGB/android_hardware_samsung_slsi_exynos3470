@@ -94,6 +94,8 @@ int exynos_v4l2_s_parm(int fd, struct v4l2_streamparm *streamparm);
 int exynos_v4l2_g_ext_ctrl(int fd, struct v4l2_ext_controls *ctrl);
 /*! \ingroup exynos_v4l2 */
 int exynos_v4l2_s_ext_ctrl(int fd, struct v4l2_ext_controls *ctrl);
+/*! \ingroup exynos_v4l2 */
+int exynos_v4l2_prepare(int fd, struct v4l2_buffer *buf);
 
 /* V4L2_SUBDEV */
 #include <linux/v4l2-subdev.h>
@@ -101,7 +103,11 @@ int exynos_v4l2_s_ext_ctrl(int fd, struct v4l2_ext_controls *ctrl);
 /*! \ingroup exynos_v4l2 */
 int exynos_subdev_open(const char *filename, int oflag, ...);
 /*! \ingroup exynos_v4l2 */
+int exynos_subdev_get_node_num(const char *devname, int oflag, ...);
+/*! \ingroup exynos_v4l2 */
 int exynos_subdev_open_devname(const char *devname, int oflag, ...);
+/*! \ingroup exynos_v4l2 */
+int exynos_subdev_close(int fd);
 /*! \ingroup exynos_v4l2 */
 int exynos_subdev_enum_frame_size(int fd, struct v4l2_subdev_frame_size_enum *frame_size_enum);
 /*! \ingroup exynos_v4l2 */

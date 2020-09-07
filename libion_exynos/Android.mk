@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LOCAL_PATH:= $(call my-dir)
+LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 # HAL module implemenation stored in
 # hw/<COPYPIX_HARDWARE_MODULE_ID>.<ro.product.board>.so
-LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)
-
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
 
-LOCAL_SRC_FILES:= \
+LOCAL_SRC_FILES := \
 	libion.cpp
 
 LOCAL_CFLAGS += -DGAIA_FW_BETA
 
 LOCAL_MODULE := libion_exynos
+LOCAL_MODULE_RELATIVE_PATH := hw
+LOCAL_MODULE_TAGS      := optional
+LOCAL_PROPRIETARY_MODULE := true
 
-LOCAL_MODULE_TAGS := optional
 
 include $(BUILD_SHARED_LIBRARY)
